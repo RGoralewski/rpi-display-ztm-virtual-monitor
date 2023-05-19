@@ -1,0 +1,3 @@
+[submodule "ztm_virtual_monitor_python_api"]
+	path = ztm_virtual_monitor_python_api
+	url = git@github.com:RGoralewski/ztm-virtual-monitor-python-api.git
