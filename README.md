@@ -9,10 +9,31 @@ with 16-bit greyscale color. There are also official library files used (inside 
 
 ## Requirements
 
-* Python >3.10 (not tested on previous versions)
+* Python >3.9 (not tested on previous versions)
 * RPi.GPIO Python module
 * Other Python libraries listed in *requirements.txt* files
 
 ## Usage
 
-TODO
+```commandline
+Usage: main.py [OPTIONS]
+
+Options:
+  -s, --stop-code TEXT            Stop code in ZTM Poznan  [required]
+  -r, --refresh-time INTEGER      Refresh time of the timetable (seconds)
+                                  [required]
+  -t, --timetable-length INTEGER  A number of rows in result dataframe with
+                                  trips  [required]
+  -v, --verbose                   Logging level
+  -l, --log                       Enable logging to file
+  --help                          Show this message and exit.
+```
+
+Example:
+```commandline
+python3.9 main.py -s MOGI42 -r 30 -t 7
+```
+
+### Demo result
+
+![Demo result on the OLED module](./images/demo_result_img.png)
