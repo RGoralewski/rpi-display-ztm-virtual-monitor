@@ -8,14 +8,17 @@ from PIL import Image, ImageDraw, ImageFont
 import click
 from datetime import datetime
 from ztm_virtual_monitor_python_api import ZTMVirtualMonitorAPI
-import pandas as pd
+import math
 
 
 @click.command()
 @click.option('-s', '--stop-code', type=str, required=True, help='Stop code in ZTM Poznan')
+@click.option('-r', '--refresh-time', type=int, required=True, help='Refresh time of the timetable (seconds)')
+@click.option('-t', '--timetable-length', type=int, required=True,
+              help='A number of rows in result dataframe with trips')
 @click.option('-v', '--verbose', count=True, help='Logging level')
 @click.option('-l', '--log', is_flag=True, default=False, help='Enable logging to file')
-def main(stop_code, verbose, log):
+def main(stop_code, refresh_time, timetable_length, verbose, log):
     log_handlers = [logging.StreamHandler()]
     log_level = {0: logging.INFO, 1: logging.DEBUG}.get(verbose, logging.INFO)
 
@@ -31,9 +34,8 @@ def main(stop_code, verbose, log):
         format='%(asctime)s|%(levelname)s|%(name)s|%(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
-    vm = ZTMVirtualMonitorAPI(stop_code)
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(vm.generate_timetable(6))
+    font = ImageFont.truetype('fonts/Font.ttc', 10)
+    luminance = 5
 
     try:
         disp = OLED_1in5.OLED_1in5()
@@ -44,31 +46,43 @@ def main(stop_code, verbose, log):
         logging.info("clear display")
         disp.clear()
 
-        image1 = Image.new('L', (disp.width, disp.height), 0)
-        draw = ImageDraw.Draw(image1)
-        font = ImageFont.truetype('fonts/Font.ttc', 10)
-        luminance = 5
+        vm = ZTMVirtualMonitorAPI(stop_code)
 
-        hour1 = '9:52'
-        hour2 = '12:37'
+        while True:
 
-        logging.info("draw text")
-        draw.text((0, 0), 'BARANIAKA', font=font, fill=luminance)
-        draw.line([(0, 12), (127, 12)], fill=luminance)
+            current_timetable = vm.generate_timetable(timetable_length)
 
-        draw.text((0, 24), '6 Junikowo', font=font, fill=luminance)
-        hour_text_length = draw.textlength(hour1, font=font)
-        draw.text((OLED_1in5.OLED_WIDTH-1-hour_text_length, 24), hour1, font=font, fill=luminance)
+            image1 = Image.new('L', (disp.width, disp.height), 0)
+            draw = ImageDraw.Draw(image1)
 
-        draw.text((0, 36), '6 Junikowo', font=font, fill=luminance)
-        hour_text_length = draw.textlength(hour2, font=font)
-        draw.text((OLED_1in5.OLED_WIDTH-1-hour_text_length, 36), hour2, font=font, fill=luminance)
+            logging.info("draw text")
+            draw.text((0, 0), stop_code, font=font, fill=luminance)
+            draw.line([(0, 12), (127, 12)], fill=luminance)
 
-        image1 = image1.rotate(0)
-        disp.ShowImage(disp.getbuffer(image1))
-        time.sleep(60)
+            first_trip_offset = 24
+            trip_line_height = 12
 
-        disp.clear()
+            for i in range(0, len(current_timetable)):
+
+                trip = current_timetable.iloc[i]
+
+                arrival_time = trip['arrival_realtime']
+                if not arrival_time or arrival_time > 0:
+                    arrival_time = ':'.join(trip['arrival_time'].split(":")[:2])
+                else:
+                    minutes_to_arrive = math.ceil(abs(arrival_time) / 60)
+                    arrival_time = f'<{minutes_to_arrive}min'
+
+                y_pos = first_trip_offset + trip_line_height * i
+                draw.text((0, y_pos), f"{trip['route_id']} {trip['trip_headsign']}", font=font, fill=luminance)
+                hour_text_length = draw.textlength(arrival_time, font=font)
+                draw.text((OLED_1in5.OLED_WIDTH-1-hour_text_length, y_pos), arrival_time, font=font, fill=luminance)
+
+            image1 = image1.rotate(0)
+            disp.clear()
+            disp.ShowImage(disp.getbuffer(image1))
+
+            time.sleep(refresh_time)
 
     except IOError as e:
         logging.info(e)
