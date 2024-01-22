@@ -24,16 +24,22 @@ Options:
                                   [required]
   -t, --timetable-length INTEGER  A number of rows in result dataframe with
                                   trips  [required]
+  -n, --stop-name TEXT            Stop name that will be displayed on the top.
+                                  If not given, the stop code will be
+                                  displayed.
   -v, --verbose                   Logging level
   -l, --log                       Enable logging to file
   --help                          Show this message and exit.
+
 ```
 
 Example:
 ```commandline
-python3.9 main.py -s MOGI42 -r 30 -t 7
+python3.11 main.py -s RKAP71 -r 30 -t 7 -n "Rondo Kaponiera"
 ```
 
-### Demo result
+Stop code can be checked on the [PEKA Virtual Monitor](https://www.peka.poznan.pl/vm/) site.
 
-![Demo result on the OLED module](./images/demo_result_img.png)
+### LEGO timetable application
+
+![LEGO timetable with LEGO Trains](./images/lego_timetable_assembled.jpeg) 
